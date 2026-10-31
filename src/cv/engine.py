@@ -10,59 +10,71 @@ from torchvision import models
 
 
 def top_k_mean(s, k=5):
+    """
+    Compute the mean probability of the top-k frames with the highest accident scores for each video.
+    """
     if len(s) <= k:
         return s.mean()
     return s.nlargest(k).mean()
 
 
-def build_model(dropout, device):
-    m = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT)
+def build_model(dropout=0.2, device="cuda", backbone="mobilenet_v2"):
+    """
+    Build the model with a pretrained frozen backbone (MobileNetV2 or EfficientNet-B0)
+    and a custom binary classification head.
+    """
+    if backbone == "efficientnet_b0":
+        m = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.DEFAULT)
+        in_features = 1280
+    else:
+        m = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT)
+        in_features = m.classifier[1].in_features
+
+    # Freeze all backbone parameters
     for p in m.parameters():
         p.requires_grad = False
+
+    # Define custom classifier head for binary classification
     m.classifier = nn.Sequential(
         nn.Dropout(p=dropout),
-        nn.Linear(m.classifier[1].in_features, 1),
+        nn.Linear(in_features, 1),
     )
     return m.to(device)
 
 
-def video_metrics(m, loader, criterion, device, k=5):
-    m.eval()
+def video_metrics(model, loader, device, threshold=0.5):
+    """
+    Evaluate model performance at the video level using top-k frame aggregation.
+    """
+    model.eval()
     recs = []
-    loss_sum = 0.0
-    n = 0
-    correct = 0
 
     with torch.no_grad():
         for images, labels, vids in loader:
-            images, labels = images.to(device), labels.to(device).float()
-
-            # استخراج ویژگی برای تطابق با معماری بهینه‌شده
-            features = m.features(images)
+            images = images.to(device)
+            features = model.features(images)
             features = F.adaptive_avg_pool2d(features, (1, 1))
             features = torch.flatten(features, 1)
-
-            out = m.classifier(features).squeeze(1)
-            loss_sum += criterion(out, labels).item() * images.size(0)
-
+            out = model.classifier(features).squeeze(1)
             p = torch.sigmoid(out)
-            correct += ((p >= 0.5).float() == labels).sum().item()
-            n += images.size(0)
 
-            recs += list(zip(vids, labels.cpu().numpy(), p.cpu().numpy()))
+            for vid, label, prob in zip(vids, labels.cpu().numpy(), p.cpu().numpy()):
+                recs.append({"video_id": vid, "y": label, "p": prob})
 
-    d = pd.DataFrame(recs, columns=["video_id", "y", "p"])
-    v = d.groupby("video_id").agg(y=("y", "first"), s=("p", lambda s: top_k_mean(s, k)))
+    df = pd.DataFrame(recs)
+    if df.empty:
+        return 0.0, 0.0
 
-    f1 = f1_score(
-        v["y"].astype(int),
-        (v["s"] >= 0.5).astype(int),
-        average="macro",
-        zero_division=0,
+    video_df = df.groupby("video_id").agg(
+        y=("y", "first"), s=("p", lambda s: top_k_mean(s, k=5))
     )
 
-    vacc = ((v["s"] >= 0.5).astype(int) == v["y"].astype(int)).mean()
-    return loss_sum / n, correct / n, f1, vacc
+    y_true = video_df["y"].astype(int).values
+    y_pred = (video_df["s"] >= threshold).astype(int)
+
+    macro_f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
+    acc = (y_pred == y_true).mean()
+    return macro_f1, acc
 
 
 def train_run(
@@ -76,108 +88,84 @@ def train_run(
     patience=3,
     label_smoothing=0.1,
 ):
-    train_ld = DataLoader(
-        train_dataset,
-        batch_size=params["batch_size"],
-        shuffle=True,
-        num_workers=0,
+    """
+    Full training loop with early stopping, Optuna pruning, and validation monitoring.
+    """
+    train_loader = DataLoader(
+        train_dataset, batch_size=int(params["batch_size"]), shuffle=True, num_workers=0
     )
 
-    m = build_model(params["dropout"], device)
+    # Support backward compatibility if backbone is not specified in params
+    backbone = params.get("backbone", "mobilenet_v2")
+    model = build_model(dropout=params["dropout"], device=device, backbone=backbone)
 
-    opt_cls = {"Adam": torch.optim.Adam, "AdamW": torch.optim.AdamW}[
-        params["optimizer"]
-    ]
+    optimizer_name = params.get("optimizer", "Adam")
+    if optimizer_name == "AdamW":
+        optimizer = torch.optim.AdamW(
+            model.classifier.parameters(),
+            lr=params["lr"],
+            weight_decay=params["weight_decay"],
+        )
+    else:
+        optimizer = torch.optim.Adam(
+            model.classifier.parameters(),
+            lr=params["lr"],
+            weight_decay=params["weight_decay"],
+        )
 
-    opt = opt_cls(
-        m.classifier.parameters(),
-        lr=params["lr"],
-        weight_decay=params["weight_decay"],
-    )
-
-    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
-
-    hist = {
-        k: []
-        for k in [
-            "lr",
-            "train_loss",
-            "train_acc",
-            "val_loss",
-            "val_acc",
-            "val_video_f1",
-            "val_video_acc",
-        ]
-    }
-
-    best_f1 = -1.0
-    best_state = None
+    best_val_f1 = 0.0
+    best_model_state = copy.deepcopy(model.state_dict())
     patience_counter = 0
+    history = {"train_loss": [], "val_f1": []}
 
-    for ep in range(epochs):
-        m.train()
-        m.features.eval()  
+    for epoch in range(epochs):
+        model.train()
+        model.features.eval()  # Keep frozen backbone in eval mode
+        total_loss = 0.0
 
-        rl = 0.0
-        c = 0
-        t = 0
-        hist["lr"].append(opt.param_groups[0]["lr"])
+        for images, labels, _ in train_loader:
+            images = images.to(device)
+            labels = labels.to(device)
 
-        for images, labels, _ in train_ld:
-            images, labels = images.to(device), labels.to(device).float()
+            optimizer.zero_grad()
+            features = model.features(images)
+            features = F.adaptive_avg_pool2d(features, (1, 1))
+            features = torch.flatten(features, 1)
+            outputs = model.classifier(features).squeeze(1)
 
-            if label_smoothing > 0.0:
-                smooth_labels = labels * (1.0 - label_smoothing) + 0.5 * label_smoothing
+            if label_smoothing > 0:
+                smoothed_labels = (
+                    labels * (1.0 - label_smoothing) + 0.5 * label_smoothing
+                )
+                loss = criterion(outputs, smoothed_labels)
             else:
-                smooth_labels = labels
-
-            opt.zero_grad(set_to_none=True)
-
-            with torch.no_grad():
-                features = m.features(images)
-                features = F.adaptive_avg_pool2d(features, (1, 1))
-                features = torch.flatten(features, 1)
-
-            out = m.classifier(features).squeeze(1)
-            loss = criterion(out, smooth_labels)
+                loss = criterion(outputs, labels)
 
             loss.backward()
-            opt.step()
+            optimizer.step()
+            total_loss += loss.item() * images.size(0)
 
-            rl += loss.item() * images.size(0)
-            c += ((torch.sigmoid(out) >= 0.5).float() == labels).sum().item()
-            t += labels.size(0)
+        epoch_loss = total_loss / len(train_dataset)
+        history["train_loss"].append(epoch_loss)
 
-        sched.step()
+        # Validation phase
+        val_f1, val_acc = video_metrics(model, val_loader, device)
+        history["val_f1"].append(val_f1)
 
-        vl, va, f1, vacc = video_metrics(m, val_loader, criterion, device)
-
-        hist["train_loss"].append(rl / t)
-        hist["train_acc"].append(c / t)
-        hist["val_loss"].append(vl)
-        hist["val_acc"].append(va)
-        hist["val_video_f1"].append(f1)
-        hist["val_video_acc"].append(vacc)
-
-        if f1 > best_f1:
-            best_f1 = f1
-            best_state = copy.deepcopy(m.state_dict())
+        if val_f1 > best_val_f1:
+            best_val_f1 = val_f1
+            best_model_state = copy.deepcopy(model.state_dict())
             patience_counter = 0
         else:
             patience_counter += 1
 
         if trial is not None:
-            trial.report(f1, ep)
+            trial.report(val_f1, epoch)
             if trial.should_prune():
                 raise optuna.TrialPruned()
 
-        if trial is None and patience_counter >= patience:
-            print(
-                f"Early stopping triggered at epoch {ep + 1}! Best Val Video F1: {best_f1:.4f}"
-            )
+        if patience_counter >= patience:
             break
 
-    if best_state is not None:
-        m.load_state_dict(best_state)
-
-    return m, hist, best_f1, best_state
+    model.load_state_dict(best_model_state)
+    return model, history, best_val_f1, best_model_state
