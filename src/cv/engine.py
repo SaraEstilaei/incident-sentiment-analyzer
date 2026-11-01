@@ -4,7 +4,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from sklearn.metrics import f1_score
+from sklearn.metrics import average_precision_score, f1_score
 from torch.utils.data import DataLoader
 from torchvision import models
 
@@ -42,9 +42,28 @@ def build_model(dropout=0.2, device="cuda", backbone="mobilenet_v2"):
     return m.to(device)
 
 
-def video_metrics(model, loader, device, threshold=0.5):
+def _mean_group_ap(y_true, scores, groups):
+    """
+    Competition metric: mean of per-group average precision.
+    Groups with a single class are skipped (AP undefined). If groups is None,
+    a single AP over all videos is returned.
+    """
+    d = pd.DataFrame({"y": y_true, "s": scores, "g": groups})
+    aps = []
+    for _, sub in d.groupby("g"):
+        if sub["y"].nunique() < 2:
+            continue
+        aps.append(average_precision_score(sub["y"], sub["s"]))
+    return float(sum(aps) / len(aps)) if aps else 0.0
+
+
+def video_metrics(model, loader, device, threshold=0.5, metric="f1", group_map=None):
     """
     Evaluate model performance at the video level using top-k frame aggregation.
+
+    metric="f1"  -> returns (macro_f1, acc)   (default, MobileNet behaviour)
+    metric="map" -> returns (mean per-group AP, acc). group_map is a dict
+                    {5-digit video id: group}; if None, one global AP is used.
     """
     model.eval()
     recs = []
@@ -72,8 +91,16 @@ def video_metrics(model, loader, device, threshold=0.5):
     y_true = video_df["y"].astype(int).values
     y_pred = (video_df["s"] >= threshold).astype(int)
 
-    macro_f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
     acc = (y_pred == y_true).mean()
+
+    if metric == "map":
+        if group_map is None:
+            groups = [0] * len(video_df)
+        else:
+            groups = [group_map.get(str(v).zfill(5), -1) for v in video_df.index]
+        return _mean_group_ap(y_true, video_df["s"].values, groups), acc
+
+    macro_f1 = f1_score(y_true, y_pred, average="macro", zero_division=0)
     return macro_f1, acc
 
 
@@ -87,6 +114,8 @@ def train_run(
     trial=None,
     patience=3,
     label_smoothing=0.1,
+    metric="f1",
+    group_map=None,
 ):
     """
     Full training loop with early stopping, Optuna pruning, and validation monitoring.
@@ -116,7 +145,7 @@ def train_run(
     best_val_f1 = 0.0
     best_model_state = copy.deepcopy(model.state_dict())
     patience_counter = 0
-    history = {"train_loss": [], "val_f1": []}
+    history = {"train_loss": [], "val_f1": [], "val_score": []}
 
     for epoch in range(epochs):
         model.train()
@@ -149,8 +178,12 @@ def train_run(
         history["train_loss"].append(epoch_loss)
 
         # Validation phase
-        val_f1, val_acc = video_metrics(model, val_loader, device)
+        val_f1, val_acc = video_metrics(
+            model, val_loader, device, metric=metric, group_map=group_map
+        )
+        # val_f1 holds the selected metric (F1 or mAP) for backward compatibility
         history["val_f1"].append(val_f1)
+        history["val_score"].append(val_f1)
 
         if val_f1 > best_val_f1:
             best_val_f1 = val_f1
