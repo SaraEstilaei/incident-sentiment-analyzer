@@ -1,4 +1,3 @@
-
 # Incident & Sentiment Analyzer
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/SaraEstilaei/incident-sentiment-analyzer.git)
@@ -13,13 +12,13 @@ This repository contains the source code, experimental pipelines, and model eval
 
 ## Team Members & Task Allocation
 
-| Member                    | Primary Focus & Contributions                                                                                                                                                                                                             |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sara Estilaei**   | **Computer Vision Lead (Problem 1):** End-to-end crash detection pipeline (Notebooks `01`, `03`, `06`, `06b`, `07`), frame extraction, feature caching, hyperparameter optimization, and multi-backbone cross-validation. |
-| **Amirali Shahabi** | *To be updated*                                                                                                                                                                                                                         |
-| **Kiana Ghaznavi**  | *To be updated*                                                                                                                                                                                                                         |
-| **Ramtin Karimi**   | *To be updated*                                                                                                                                                                                                                         |
-| **Araz**            | *To be updated*                                                                                                                                                                                                                         |
+| Member                    | Primary Focus & Contributions                                                                                                                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Sara Estilaei**   | **Computer Vision (Problem 1):** End-to-end crash detection pipeline (Notebooks `01`, `03`, `06`, `06b`, `07`), frame extraction, feature caching, hyperparameter optimization, and multi-backbone cross-validation. |
+| **Amirali Shahabi** | *To be updated*                                                                                                                                                                                                                    |
+| **Kiana Ghaznavi**  | *To be updated*                                                                                                                                                                                                                    |
+| **Ramtin Karimi**   | *To be updated*                                                                                                                                                                                                                    |
+| **Araz**            | *To be updated*                                                                                                                                                                                                                    |
 
 ---
 
