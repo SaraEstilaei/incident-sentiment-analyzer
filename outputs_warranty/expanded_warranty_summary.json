@@ -1,0 +1,16 @@
+{
+  "total_reviews": 50000,
+  "baseline_matches": 979,
+  "expanded_matches": 1010,
+  "additional_matches": 31,
+  "products": 929,
+  "keywords": [
+    "warranty",
+    "guarantee",
+    "warranties",
+    "warrantee",
+    "warrantees",
+    "warrenty"
+  ],
+  "validation": "Preliminary - manual evaluation pending"
+}

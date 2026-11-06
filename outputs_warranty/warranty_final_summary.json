@@ -1,0 +1,18 @@
+{
+  "dataset": "Train_subset_50k.csv",
+  "reviews": 50000,
+  "baseline_clean": 965,
+  "baseline_full_text": 979,
+  "additional_summary_matches": 14,
+  "products": 903,
+  "word2vec_suggestions": 70,
+  "unique_candidates": 68,
+  "screening": {
+    "context-dependent": 17,
+    "reject": 11,
+    "review": 42
+  },
+  "cooccurrence_terms_analyzed": 61,
+  "additional_variant_candidates": 26,
+  "precision_recall": "Not evaluated"
+}
