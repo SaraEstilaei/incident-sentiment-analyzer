@@ -1,0 +1,1 @@
+Fine-tunes microsoft/deberta-v3-base on an 80K-sample dataset for five-class sentiment classification. Includes data preprocessing, stratified train/validation/test splitting, model training, evaluation, and probability generation for ensemble learning.
