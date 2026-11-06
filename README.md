@@ -1,0 +1,1 @@
+Explores different approaches to sentiment classification using DistilBERT. Includes data preprocessing, experiments with vote-based features and weighted loss, and comparisons of several Transformer architectures to identify a suitable model for the final implementation.
