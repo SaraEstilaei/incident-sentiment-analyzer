@@ -1,0 +1,1 @@
+Implements the fine-tuning of microsoft/deberta-v3-base for five-class sentiment classification. Includes dataset selection, preprocessing, stratified data splitting, model training, performance evaluation, and probability generation for ensemble learning.
