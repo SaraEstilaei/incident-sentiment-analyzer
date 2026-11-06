@@ -1,0 +1,1 @@
+Fine-tunes nlptown/bert-base-multilingual-uncased-sentiment on the same 80K-sample dataset. Evaluates model performance and generates class probabilities for validation and test sets to be used in the ensemble.
