@@ -1,7 +1,7 @@
 # Incident & Sentiment Analyzer
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?logo=github)](https://github.com/SaraEstilaei/incident-sentiment-analyzer.git)
-[![Google Drive](<https://img.shields.io/badge/Google%20Drive-Data%20%26%20Artifacts-green?logo=googledrive>)](https://drive.google.com/drive/folders/1v-m-iUyZs6zxk0QtIHGCy2vL7q2Kaykb?usp=drive_link)
+[![Google Drive](https://img.shields.io/badge/Google%20Drive-Data%20%26%20Artifacts-green?logo=googledrive)](https://drive.google.com/drive/folders/1v-m-iUyZs6zxk0QtIHGCy2vL7q2Kaykb?usp=drive_link)
 
 This repository contains the source code, experimental pipelines, and model evaluation artifacts for **Project 2 of the Quera AI Bootcamp (Summer 1405)**. The project addresses two core real-world machine learning challenges:
 
@@ -12,13 +12,13 @@ This repository contains the source code, experimental pipelines, and model eval
 
 ## Team Members & Task Allocation
 
-| Member                    | Primary Focus & Contributions                                                                                                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Member              | Primary Focus & Contributions                                                                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Sara Estilaei**   | **Computer Vision (Problem 1):** End-to-end crash detection pipeline (Notebooks `01`, `03`, `06`, `06b`, `07`), frame extraction, feature caching, hyperparameter optimization, and multi-backbone cross-validation. |
-| **Amirali Shahabi** | *To be updated*                                                                                                                                                                                                                    |
-| **Kiana Ghaznavi**  | *To be updated*                                                                                                                                                                                                                    |
-| **Ramtin Karimi**   | *To be updated*                                                                                                                                                                                                                    |
-| **Araz**            | *To be updated*                                                                                                                                                                                                                    |
+| **Amirali Shahabi** | *To be updated*                                                                                                                                                                                                          |
+| **Kiana Ghaznavi**  | *To be updated*                                                                                                                                                                                                          |
+| **Ramtin Karimi**   | *To be updated*                                                                                                                                                                                                          |
+| **Araz**            | *To be updated*                                                                                                                                                                                                          |
 
 ---
 
@@ -36,6 +36,8 @@ This repository contains the source code, experimental pipelines, and model eval
   - **Exploratory Data Analysis (EDA):** Class distribution inspection, text-length filtering, top reviewer analysis, and word clouds.
   - **Aspect-Based Analysis:** Semantic retrieval of warranty- and guarantee-related reviews using word embeddings / LLM representations.
   - **Sentiment Modeling:** Multi-class classification evaluated via micro-averaged F1 score on an unlabelled test split.
+- **Transformer & DistilBERT Experiments:**
+  Explores different approaches to sentiment classification using DistilBERT. Includes data preprocessing, experiments with vote-based features and weighted loss, and comparisons of several Transformer architectures to identify a suitable model for the final implementation.
 
 ---
 
@@ -86,3 +88,4 @@ I designed, implemented, and benchmarked the entire computer vision pipeline fro
 
 - **Source Code Repository:** [GitHub Repository](https://github.com/SaraEstilaei/incident-sentiment-analyzer.git)
 - **Datasets, Feature Caches & Models:** [Google Drive Folder](https://drive.google.com/drive/folders/1v-m-iUyZs6zxk0QtIHGCy2vL7q2Kaykb?usp=drive_link)
+
