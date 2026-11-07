@@ -1,0 +1,6 @@
+model,precision,recall,f1
+Regex,0.8,0.889,0.842
+Expanded Regex,0.8,0.889,0.842
+FastText,0.643,1.0,0.783
+Word2Vec,0.429,1.0,0.6
+Sentence-BERT,0,0.0,0

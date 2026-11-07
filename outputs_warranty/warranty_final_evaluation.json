@@ -1,0 +1,18 @@
+{
+  "dataset_size": 50000,
+  "baseline_reviews": 979,
+  "expanded_reviews": 1010,
+  "additional_reviews": 31,
+  "products": 929,
+  "evaluation_sample": 30,
+  "positive_labels": 9,
+  "negative_labels": 21,
+  "selected_method": "Expanded Regex",
+  "evaluation_f1": 0.842,
+  "limitations": [
+    "Preliminary manual labels",
+    "Small, stratified evaluation sample",
+    "Sentence-BERT threshold not calibrated",
+    "Full dataset not evaluated"
+  ]
+}

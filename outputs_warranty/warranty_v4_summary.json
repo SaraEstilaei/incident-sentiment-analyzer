@@ -1,0 +1,40 @@
+{
+  "dataset_rows": 50000,
+  "core_rule_matches": 1027,
+  "core_products": 945,
+  "new_unverified_candidates": 573,
+  "candidate_direct_rule_count": 118,
+  "candidate_context_rule_count": 455,
+  "exploratory_broad_matches": 1600,
+  "exploratory_broad_products": 1419,
+  "core_rate_pct": 2.054,
+  "exploratory_rate_pct": 3.2,
+  "candidate_rules": {
+    "related_plan_terms": 8,
+    "company_repairs_or_replaces": 109,
+    "rma_process": 92,
+    "repair_then_service_provider": 140,
+    "squaretrade_provider": 8,
+    "free_replacement": 36,
+    "coverage_and_repairs": 44,
+    "sent_replacement": 92,
+    "return_authorization": 4,
+    "stands_behind_product": 32,
+    "data_recovery_protection": 3,
+    "spelling_variants": 3,
+    "replacement_no_questions": 2
+  },
+  "priority_review_size": 198,
+  "random_unmatched_audit_size": 150,
+  "warnings": [
+    "Core is an unverified lexical count, not a gold-standard true prevalence.",
+    "All new candidates require manual validation before inclusion as positives.",
+    "RMA can be a regular return, and customer service can mean retail service.",
+    "Broad product statistics are exploratory; not to be used as verified warranty satisfaction.",
+    "Mean overall is general product rating within matches, not aspect-specific sentiment."
+  ],
+  "weak_model_only_unverified_candidates": 125,
+  "total_cumulative_unverified_retrieval_candidates": 698,
+  "expanded_exploratory_union_with_model": 1725,
+  "exploratory_union_with_model_products": 1517
+}
